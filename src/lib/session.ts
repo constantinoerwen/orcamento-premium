@@ -2,7 +2,7 @@ import 'server-only';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const secretKey = process.env.SESSION_SECRET;
+const secretKey = process.env.SESSION_SECRET || 'fallback-secret-key-change-it-in-production';
 const encodedKey = new TextEncoder().encode(secretKey);
 
 export type SessionPayload = {
