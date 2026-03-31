@@ -569,7 +569,7 @@ const BudgetForm = () => {
               >
                 <option value="">Manual / Configuração Padrão</option>
                 {filteredMachines.map((m: any) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+                  <option key={m.id} value={m.id}>{m.name} | {m.marca} {m.modelo}</option>
                 ))}
               </select>
             </div>

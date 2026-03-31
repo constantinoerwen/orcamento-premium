@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { getMachines, createMachine, updateMachine, deleteMachine } from '@/app/actions/budget';
 import { formatBRL } from '@/lib/currency';
-import { Plus, Cpu, Calendar, Tag, Info, DollarSign, Database, ArrowRight, Zap, Target, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Cpu, Calendar, Tag, Info, DollarSign, Database, ArrowRight, Zap, Target, Edit2, Trash2, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MaquinasPage() {
@@ -14,6 +14,9 @@ export default function MaquinasPage() {
   const [formData, setFormData] = useState({
     name: '',
     tipo: '3D', // 3D ou LASER
+    marca: '',
+    modelo: '',
+    numeroSerie: '',
     dataAquisicao: new Date().toISOString().split('T')[0],
     precoAquisicao: '',
     custoMaquinaH: '',
@@ -45,6 +48,9 @@ export default function MaquinasPage() {
       setFormData({
         name: '',
         tipo: '3D',
+        marca: '',
+        modelo: '',
+        numeroSerie: '',
         dataAquisicao: new Date().toISOString().split('T')[0],
         precoAquisicao: '',
         custoMaquinaH: '',
@@ -59,6 +65,9 @@ export default function MaquinasPage() {
     setFormData({
       name: m.name || '',
       tipo: m.tipo || '3D',
+      marca: m.marca || '',
+      modelo: m.modelo || '',
+      numeroSerie: m.numeroSerie || '',
       dataAquisicao: m.dataAquisicao ? new Date(m.dataAquisicao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       precoAquisicao: m.precoAquisicao ? m.precoAquisicao.toString() : '',
       custoMaquinaH: m.custoMaquinaH ? m.custoMaquinaH.toString() : '',
@@ -103,6 +112,9 @@ export default function MaquinasPage() {
                 setFormData({
                   name: '',
                   tipo: '3D',
+                  marca: '',
+                  modelo: '',
+                  numeroSerie: '',
                   dataAquisicao: new Date().toISOString().split('T')[0],
                   precoAquisicao: '',
                   custoMaquinaH: '',
@@ -130,7 +142,12 @@ export default function MaquinasPage() {
             >
               <form onSubmit={handleSubmit} className="bg-white dark:bg-zinc-900 rounded-3xl p-8 border border-zinc-200 dark:border-zinc-800 shadow-xl grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-4">
-                  <InputField label="Nome da Máquina" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Bambu Lab P1S" icon={<Tag size={16}/>} />
+                  <InputField label="Nome do Equipamento" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Impressora Principal" icon={<Tag size={16}/>} required />
+                  <InputField label="Marca" name="marca" value={formData.marca} onChange={handleInputChange} placeholder="Ex: Bambu Lab" icon={<Building2 size={16}/>} required />
+                  <InputField label="Modelo" name="modelo" value={formData.modelo} onChange={handleInputChange} placeholder="Ex: P1S Combo" icon={<Info size={16}/>} required />
+                </div>
+
+                <div className="space-y-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">Tipo de Tecnologia</label>
                     <select name="tipo" value={formData.tipo} onChange={handleInputChange} className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold dark:text-white uppercase transition-all">
@@ -138,11 +155,8 @@ export default function MaquinasPage() {
                       <option value="LASER">Máquina Laser</option>
                     </select>
                   </div>
-                </div>
-
-                <div className="space-y-4">
+                  <InputField label="Número de Série" name="numeroSerie" value={formData.numeroSerie} onChange={handleInputChange} placeholder="Ex: SN123456" icon={<Database size={16}/>} required />
                   <InputField label="Data de Aquisição" name="dataAquisicao" value={formData.dataAquisicao} onChange={handleInputChange} type="date" icon={<Calendar size={16}/>} />
-                  <InputField label="Preço de Aquisição (R$)" name="precoAquisicao" value={formData.precoAquisicao} onChange={handleInputChange} placeholder="0.00" icon={<DollarSign size={16}/>} type="number" />
                 </div>
 
                 <div className="space-y-4">
@@ -166,9 +180,9 @@ export default function MaquinasPage() {
               <thead>
                 <tr className="border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Data Aquisição</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Equipamento</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Equipamento / Marca</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Modelo / Série</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Tipo</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Preço Aquisição</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Custo/Hora</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] text-right">Ações</th>
                 </tr>
@@ -193,7 +207,16 @@ export default function MaquinasPage() {
                         </div>
                       </td>
                       <td className="px-6 py-6 font-black text-zinc-800 dark:text-zinc-100 tracking-tight italic uppercase">
-                        {m.name}
+                        <div className="flex flex-col">
+                          <span>{m.name}</span>
+                          {m.marca && <span className="text-[10px] text-zinc-400 normal-case font-bold">{m.marca}</span>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="flex flex-col">
+                          <span className="text-zinc-800 dark:text-zinc-200 font-bold text-sm uppercase italic">{m.modelo}</span>
+                          {m.numeroSerie && <span className="text-[9px] text-indigo-500 font-bold uppercase tracking-tighter">SN: {m.numeroSerie}</span>}
+                        </div>
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex items-center gap-2">
@@ -242,7 +265,7 @@ export default function MaquinasPage() {
   );
 }
 
-const InputField = ({ label, name, value, onChange, placeholder, icon, type = "text" }: any) => (
+const InputField = ({ label, name, value, onChange, placeholder, icon, type = "text", required = false }: any) => (
   <div className="flex flex-col gap-1.5 flex-1">
     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">{label}</label>
     <div className="relative">
@@ -253,6 +276,7 @@ const InputField = ({ label, name, value, onChange, placeholder, icon, type = "t
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        required={required}
         className={`w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-3 ${icon ? 'pl-11' : 'px-4'} rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-bold dark:text-white transition-all`}
       />
     </div>

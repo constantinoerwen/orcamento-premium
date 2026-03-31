@@ -3,13 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model AppSettings {
   id        String   @id @default("singleton")
-  data      String   // JSON com todas as configurações personalizáveis
+  data      String
   updatedAt DateTime @updatedAt
 }
 
@@ -18,7 +18,7 @@ model User {
   email     String   @unique
   password  String
   name      String
-  role      String   @default("operador") // admin, operador
+  role      String   @default("operador")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -26,74 +26,69 @@ model User {
 model Client {
   id        String   @id @default(cuid())
   name      String
-  documento String?
   email     String?
   phone     String?
-  budgets   Budget[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  documento String?
+  budgets   Budget[]
 }
 
 model Material {
-  id         String   @id @default(cuid())
-  nome       String
-  marca      String?
-  tipo       String?
-  linha      String?
-  cor        String?
-  precoKg    Float
-  precoCompra Float?   // Preço do rolo/unidade
-  estoqueG   Float    @default(0) // Quantidade atual em gramas
-  dataCompra DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String    @id @default(cuid())
+  nome        String
+  marca       String?
+  tipo        String?
+  linha       String?
+  cor         String?
+  precoKg     Float
+  precoCompra Float?
+  estoqueG    Float     @default(0)
+  dataCompra  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Machine {
-  id            String   @id @default(cuid())
-  name          String
-  tipo          String   @default("3D") // 3D ou LASER
-  dataAquisicao DateTime?
+  id             String    @id @default(cuid())
+  name           String
+  tipo           String    @default("3D")
+  marca          String    @default("N/A")
+  modelo         String    @default("Padrão")
+  numeroSerie    String    @default("N/A")
+  dataAquisicao  DateTime?
   precoAquisicao Float?
-  custoMaquinaH Float
-  custoEnergiaH Float
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  custoMaquinaH  Float
+  custoEnergiaH  Float
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model Budget {
-  id              String   @id @default(cuid())
-  nomePeca        String
-  clientId        String
-  cliente         Client   @relation(fields: [clientId], references: [id])
-  nomeMaterial    String
-  pesoG           Float
-  tempoH          Int
-  tempoM          Int
-  tipoServico     String   @default("3D") // 3D ou LASER
-  
-  // Detalhes calculados
-  custoMaterial   Float
-  custoEnergia    Float
-  custoMaquina    Float
-  custoTotal      Float
-  margemPercent   Float
-  impostoPercent  Float
-  
-  // Adicionais
-  setupCost       Float    @default(0)
-  finishingCost   Float    @default(0)
-  urgencyCost     Float    @default(0)
-  shippingCost    Float    @default(0)
-  
-  precoFinal      Float
-  lucro           Float
-  
-  // Extras do orçamento
-  prazoEntrega    String?
-  observacao      String?
-  pdfBase64       String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  nomePeca       String
+  clientId       String
+  nomeMaterial   String
+  pesoG          Float
+  tempoH         Int
+  tempoM         Int
+  tipoServico    String   @default("3D")
+  custoMaterial  Float
+  custoEnergia   Float
+  custoMaquina   Float
+  custoTotal     Float
+  margemPercent  Float
+  impostoPercent Float
+  setupCost      Float    @default(0)
+  finishingCost  Float    @default(0)
+  urgencyCost    Float    @default(0)
+  shippingCost   Float    @default(0)
+  precoFinal     Float
+  lucro          Float
+  prazoEntrega   String?
+  observacao     String?
+  pdfBase64      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  cliente        Client   @relation(fields: [clientId], references: [id])
 }

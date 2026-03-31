@@ -221,6 +221,9 @@ export async function createMachine(data: any) {
       data: {
         name: data.name,
         tipo: data.tipo || "3D",
+        marca: data.marca,
+        modelo: data.modelo,
+        numeroSerie: data.numeroSerie,
         dataAquisicao: data.dataAquisicao ? new Date(data.dataAquisicao) : new Date(),
         precoAquisicao: parseFloat(data.precoAquisicao),
         custoMaquinaH: parseFloat(data.custoMaquinaH) || 0,
@@ -241,6 +244,9 @@ export async function updateMachine(id: string, data: any) {
       data: {
         name: data.name,
         tipo: data.tipo || "3D",
+        marca: data.marca,
+        modelo: data.modelo,
+        numeroSerie: data.numeroSerie,
         dataAquisicao: data.dataAquisicao ? new Date(data.dataAquisicao) : new Date(),
         precoAquisicao: parseFloat(data.precoAquisicao),
         custoMaquinaH: parseFloat(data.custoMaquinaH) || 0,
