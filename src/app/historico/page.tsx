@@ -1,8 +1,9 @@
 import { getBudgetHistory } from "@/app/actions/budget";
 import { formatBRL } from "@/lib/currency";
-import { TrendingUp, ArrowLeft, Calendar, User, Package, DollarSign } from "lucide-react";
+import { TrendingUp, ArrowLeft, Calendar, User, Package, DollarSign, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import Header from "@/components/Header";
+import DeleteBudgetButton from "@/components/DeleteBudgetButton";
 
 export const dynamic = "force-dynamic";
 
@@ -35,12 +36,13 @@ export default async function HistoricoPage() {
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Produção</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Valor Final</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Lucro</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] text-right">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {history.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center">
+                    <td colSpan={7} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center gap-2 text-zinc-400 italic">
                         <Package size={40} className="mb-2 opacity-20" />
                         <p>Nenhum orçamento encontrado.</p>
@@ -93,6 +95,12 @@ export default async function HistoricoPage() {
                           <DollarSign size={14} />
                           <span className="text-sm font-black">R$ {formatBRL(budget.lucro)}</span>
                         </div>
+                      </td>
+                      <td className="px-6 py-6 text-right flex items-center justify-end gap-2">
+                        <Link href={`/orcamento/${budget.id}`} title="Ver Detalhes" className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl inline-block hover:scale-110 transition-transform">
+                          <ArrowUpRight size={16} className="text-zinc-400" />
+                        </Link>
+                        <DeleteBudgetButton id={budget.id} />
                       </td>
                     </tr>
                   ))

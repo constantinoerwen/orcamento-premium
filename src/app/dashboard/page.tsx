@@ -17,20 +17,25 @@ import {
   Briefcase
 } from "lucide-react";
 import Link from "next/link";
+import BudgetStatusToggle from "@/components/BudgetStatusToggle";
+import DeleteBudgetButton from "@/components/DeleteBudgetButton";
 
 export default async function DashboardPage() {
   const budgets = await getBudgetHistory();
 
-  // Cálculos Gerenciais
-  const totalReceita = budgets.reduce((acc, b) => acc + b.precoFinal, 0);
-  const totalLucro = budgets.reduce((acc, b) => acc + b.lucro, 0);
-  const totalImpostos = budgets.reduce((acc, b) => acc + (b.precoFinal * (b.impostoPercent / 100)), 0);
+  // Apenas orçamentos Aprovados entram nas estatísticas financeiras
+  const approvedBudgets = budgets.filter(b => b.status === "APROVADO");
+
+  // Cálculos Gerenciais (Sobre Aprovados)
+  const totalReceita = approvedBudgets.reduce((acc, b) => acc + b.precoFinal, 0);
+  const totalLucro = approvedBudgets.reduce((acc, b) => acc + b.lucro, 0);
+  const totalImpostos = approvedBudgets.reduce((acc, b) => acc + (b.precoFinal * (b.impostoPercent / 100)), 0);
   
   // Reserva de Manutenção: 10% do custo operacional (máquina + energia)
-  const totalManutencao = budgets.reduce((acc, b) => acc + ((b.custoMaquina + b.custoEnergia) * 0.1), 0);
+  const totalManutencao = approvedBudgets.reduce((acc, b) => acc + ((b.custoMaquina + b.custoEnergia) * 0.1), 0);
   
-  const totalPesoG = budgets.reduce((acc, b) => acc + b.pesoG, 0);
-  const totalPecas = budgets.length;
+  const totalPesoG = approvedBudgets.reduce((acc, b) => acc + b.pesoG, 0);
+  const totalPecas = approvedBudgets.length;
 
   const cards = [
     {
@@ -135,7 +140,7 @@ export default async function DashboardPage() {
           <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
              <div className="p-8 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
                 <h2 className="text-sm font-black uppercase tracking-widest text-zinc-800 dark:text-zinc-100 italic">Últimos Orçamentos</h2>
-                <Link href="/orcamento" className="text-xs font-bold text-indigo-600 hover:underline">Ver Histórico Completo</Link>
+                <Link href="/historico" className="text-xs font-bold text-indigo-600 hover:underline">Ver Histórico Completo</Link>
              </div>
              <div className="overflow-x-auto">
                <table className="w-full">
@@ -144,6 +149,7 @@ export default async function DashboardPage() {
                         <th className="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Item</th>
                         <th className="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Preço Final</th>
                         <th className="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Residuo (Imposto)</th>
+                        <th className="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Status</th>
                         <th className="px-8 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Ação</th>
                      </tr>
                   </thead>
@@ -153,10 +159,14 @@ export default async function DashboardPage() {
                           <td className="px-8 py-6 font-bold text-zinc-900 dark:text-zinc-100">{b.nomePeca}</td>
                           <td className="px-8 py-6 font-black text-indigo-600 italic">R$ {formatBRL(b.precoFinal)}</td>
                           <td className="px-8 py-6 text-zinc-500 font-medium text-sm">R$ {formatBRL(b.precoFinal * (b.impostoPercent / 100))}</td>
-                          <td className="px-8 py-6 text-right">
-                             <Link href={`/orcamento/${b.id}`} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl inline-block hover:scale-110 transition-transform">
+                          <td className="px-8 py-6">
+                            <BudgetStatusToggle id={b.id} initialStatus={b.status} />
+                          </td>
+                          <td className="px-8 py-6 text-right flex items-center justify-end gap-2">
+                             <Link href={`/orcamento/${b.id}`} title="Ver Detalhes" className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl inline-block hover:scale-110 transition-transform">
                                 <ArrowUpRight size={16} className="text-zinc-400" />
                              </Link>
+                             <DeleteBudgetButton id={b.id} />
                           </td>
                        </tr>
                      ))}

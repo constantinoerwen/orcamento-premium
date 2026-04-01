@@ -32,7 +32,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const BudgetForm = () => {
-  const [input, setInput] = useState<CalculationInput & { nomePeca: string; nomeMaterial: string; clientId?: string; materialId?: string; materialBase?: string; prazoEntrega: string; observacao: string; perdaTecnicaPercent: number }>({
+  const [input, setInput] = useState<CalculationInput & { nomePeca: string; nomeMaterial: string; clientId?: string; materialId?: string; machineId?: string; materialBase?: string; prazoEntrega: string; observacao: string; perdaTecnicaPercent: number }>({
     nomePeca: '',
     nomeMaterial: 'Material Manual',
     clientId: undefined,
@@ -46,13 +46,14 @@ const BudgetForm = () => {
     custoHoraMaquina: 5,
     custoHoraEnergia: 0.5,
     margemPercent: 100,
-    impostoPercent: 6,
+    impostoPercent: 25,
     isLaser: false,
     materialCliente: false,
     custoItemBase: 0,
     materialBase: 'Acrílico',
     perdaTecnicaPercent: 5,
     tipoTrabalho: 'GRAVACAO',
+    precoAquisicao: 0,
     extras: {
       setup: 0,
       acabamento: 0,
@@ -561,8 +562,16 @@ const BudgetForm = () => {
                   if (machine) {
                     setInput(prev => ({ 
                       ...prev, 
+                      machineId: machine.id,
                       custoHoraMaquina: machine.custoMaquinaH,
-                      custoHoraEnergia: machine.custoEnergiaH
+                      custoHoraEnergia: machine.custoEnergiaH,
+                      precoAquisicao: machine.precoAquisicao
+                    }));
+                  } else {
+                    setInput(prev => ({
+                      ...prev,
+                      machineId: undefined,
+                      precoAquisicao: 0
                     }));
                   }
                 }}
@@ -778,9 +787,12 @@ const BudgetForm = () => {
 
                 <div className="grid grid-cols-2 gap-8 mt-10">
                   <ResultItem label="Lucro Estimado" value={result.lucro} highlight />
-                  <ResultItem label="Custo Total" value={result.custoTotal} />
+                  <ResultItem label="Custo Total Base" value={result.custoTotal} />
                   <ResultItem label="Custo Material" value={result.custoMaterial} />
-                  <ResultItem label="Custo Equipamento" value={result.custoMaquina + result.custoEnergia} />
+                  <ResultItem label="Custo Eq. + Energia" value={result.custoMaquina + result.custoEnergia} />
+                  <div className="col-span-2 mt-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
+                    <ResultItem label="Fundo de Depreciação (Reserva)" value={result.custoDepreciacao} highlight />
+                  </div>
                 </div>
 
                 {marginAlert && (

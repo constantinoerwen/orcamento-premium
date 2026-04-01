@@ -14,6 +14,7 @@ export async function saveBudget(
     pdfBase64?: string;
     materialId?: string;
     pesoTotalG?: number;
+    machineId?: string;
   }, 
   result: CalculationResult
 ) {
@@ -44,6 +45,7 @@ export async function saveBudget(
         custoMaterial: result.custoMaterial,
         custoEnergia: result.custoEnergia,
         custoMaquina: result.custoMaquina,
+        custoDepreciacao: result.custoDepreciacao,
         custoTotal: result.custoTotal,
         margemPercent: input.margemPercent,
         impostoPercent: input.impostoPercent,
@@ -56,6 +58,8 @@ export async function saveBudget(
         prazoEntrega: input.prazoEntrega || null,
         observacao: input.observacao || null,
         pdfBase64: input.pdfBase64 || null,
+        machineId: input.machineId || null,
+        status: "PENDENTE",
       }
     });
 
@@ -95,6 +99,19 @@ export async function getBudgetHistory() {
     include: { cliente: true },
     orderBy: { createdAt: 'desc' }
   });
+}
+
+export async function updateBudgetStatus(id: string, status: string) {
+  try {
+    const budget = await prisma.budget.update({
+      where: { id },
+      data: { status }
+    });
+    return { success: true, budget };
+  } catch (error) {
+    console.error("Erro ao atualizar status do orçamento:", error);
+    return { success: false, error: "Falha ao atualizar status" };
+  }
 }
 
 export async function getMaterials() {
@@ -156,7 +173,8 @@ export async function deleteClient(id: string) {
 
 export async function getMachines() {
   return await prisma.machine.findMany({
-    orderBy: { name: 'asc' }
+    orderBy: { name: 'asc' },
+    include: { budgets: true }
   });
 }
 
@@ -267,5 +285,15 @@ export async function deleteMachine(id: string) {
   } catch (error) {
     console.error("Erro ao excluir máquina:", error);
     return { success: false, error: "Falha ao excluir máquina" };
+  }
+}
+
+export async function deleteBudget(id: string) {
+  try {
+    await prisma.budget.delete({ where: { id } });
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao excluir orçamento:", error);
+    return { success: false, error: "Falha ao excluir orçamento" };
   }
 }

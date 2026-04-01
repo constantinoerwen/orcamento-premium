@@ -192,7 +192,9 @@ export default function MaquinasPage() {
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Equipamento / Marca</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Modelo / Série</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Tipo</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Custo Aquisição</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Custo/Hora</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Fundo/Reserva</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] text-right">Ações</th>
                 </tr>
               </thead>
@@ -200,7 +202,7 @@ export default function MaquinasPage() {
                 {machines.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-20 text-center">
-                      <div className="flex flex-col items-center gap-2 text-zinc-400 italic">
+                      <div className="flex flex-col items-center gap-2 text-zinc-400 italic">++
                         <Cpu size={40} className="mb-2 opacity-20" />
                         <p>Nenhuma máquina cadastrada.</p>
                       </div>
@@ -242,8 +244,31 @@ export default function MaquinasPage() {
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex flex-col">
-                          <span className="text-sm font-black text-zinc-900 dark:text-white italic">R$ {formatBRL(m.custoMaquinaH + m.custoEnergiaH)}/h</span>
-                          <span className="text-[9px] text-zinc-400 uppercase font-black tracking-widest">Base + Energia</span>
+
+                          <span className="text-sm font-black text-zinc-900 dark:text-white italic">
+                            {(() => {
+                              const VIDA_UTIL = m.tipo === 'LASER' ? 5000 : 8000;
+
+                              const custoDepreciacao = m.precoAquisicao
+                                ? Number(m.precoAquisicao) / VIDA_UTIL
+                                : 0
+
+                              const custoHora =
+                                (Number(m.custoMaquinaH) || 0) +
+                                (Number(m.custoEnergiaH) || 0) +
+                                custoDepreciacao
+
+                              return `R$ ${formatBRL(custoHora)}/h`
+                            })()}
+                          </span>
+
+                          <span className="text-[9px] text-zinc-400 uppercase font-black tracking-widest">Base+Energ+Dep.</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-6 font-black text-emerald-600 dark:text-emerald-400 italic">
+                        <div className="flex flex-col">
+                           <span>R$ {formatBRL(m.budgets?.filter((b: any) => b.status === "APROVADO").reduce((acc: number, b: any) => acc + (b.custoDepreciacao || 0), 0) || 0)}</span>
+                           <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tighter">Reservado</span>
                         </div>
                       </td>
                       <td className="px-6 py-6 text-right">

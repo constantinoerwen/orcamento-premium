@@ -34,10 +34,10 @@ export default async function PublicBudgetPage({ params }: { params: { id: strin
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <Link 
-              href="/" 
+              href="/orcamento" 
               className="inline-flex items-center gap-2 text-zinc-500 hover:text-indigo-600 transition-colors text-sm font-bold uppercase tracking-widest mb-4"
             >
-              <ArrowLeft size={16} /> Voltar ao Início
+              <ArrowLeft size={16} /> Voltar para Orçamento
             </Link>
             <h1 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter italic">
               ORÇAMENTO <span className="text-indigo-600">#{budget.id.slice(-4).toUpperCase()}</span>

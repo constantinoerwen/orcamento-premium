@@ -12,6 +12,7 @@ export interface CalculationInput {
   materialCliente?: boolean;
   custoItemBase?: number;
   tipoTrabalho?: 'GRAVACAO' | 'CORTE';
+  precoAquisicao?: number
   extras: {
     setup: number;
     acabamento: number;
@@ -25,6 +26,7 @@ export interface CalculationResult {
   tempoTotalHoras: number;
   custoEnergia: number;
   custoMaquina: number;
+  custoDepreciacao: number;
   custoTotal: number;
   precoSugerido: number;
   valorImposto: number;
@@ -70,10 +72,17 @@ export function calculateBudget(input: CalculationInput): CalculationResult {
   const custoEnergia = tempoTotalHoras * custoHoraEnergia;
 
   // Custo máquina: tempo_total_horas × custo_hora_maquina
-  const custoMaquina = tempoTotalHoras * custoHoraMaquina;
+  const precoAquisicao = input.precoAquisicao || 0;
+  const VIDA_UTIL = input.isLaser ? 5000 : 8000;
 
-  // Custo total: custo_material + custo_energia + custo_maquina
-  const custoTotal = custoMaterial + custoEnergia + custoMaquina;
+  const custoDepreciacao = precoAquisicao
+    ? (Number(precoAquisicao) / VIDA_UTIL) * tempoTotalHoras
+    : 0;
+
+  const custoMaquina = tempoTotalHoras * (Number(custoHoraMaquina) || 0);
+
+  // Custo total: custo_material + custo_energia + custo_maquina + custo_depreciacao
+  const custoTotal = custoMaterial + custoEnergia + custoMaquina + custoDepreciacao;
 
   // Aplicação da margem: preco_sugerido = custo_total × (1 + margem/100)
   const precoSugerido = custoTotal * (1 + margemPercent / 100);
@@ -95,6 +104,7 @@ export function calculateBudget(input: CalculationInput): CalculationResult {
     tempoTotalHoras,
     custoEnergia,
     custoMaquina,
+    custoDepreciacao,
     custoTotal,
     precoSugerido,
     valorImposto,
