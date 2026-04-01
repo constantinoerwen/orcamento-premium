@@ -30,12 +30,12 @@ export default async function HistoricoPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
+                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Nº Documento</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Data</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Cliente</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Peça</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Produção</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Valor Final</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Lucro</th>
                   <th className="px-6 py-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] text-right">Ação</th>
                 </tr>
               </thead>
@@ -53,6 +53,11 @@ export default async function HistoricoPage() {
                 ) : (
                   history.map((budget) => (
                     <tr key={budget.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors cursor-pointer group">
+                      <td className="px-6 py-6">
+                        <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm border ${budget.orderNumber ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' : 'bg-zinc-100 text-zinc-500 border-zinc-200'}`}>
+                          {budget.orderNumber || budget.budgetNumber || `#${budget.id.slice(-4).toUpperCase()}`}
+                        </span>
+                      </td>
                       <td className="px-6 py-6">
                         <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
                           <Calendar size={14} className="text-zinc-300" />
@@ -113,8 +118,8 @@ export default async function HistoricoPage() {
 
       <footer className="border-t border-zinc-200 dark:border-zinc-800 py-12 mt-20">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-zinc-400 text-sm">
-            &copy; {new Date().getFullYear()} Antigravity Production System. Desenvolvido com precisão.
+          <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest">
+            &copy; {new Date().getFullYear()} Premium Budget System • All Rights Reserved
           </p>
         </div>
       </footer>

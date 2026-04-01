@@ -2,11 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { CalculationInput, CalculationResult } from "@/lib/calculations";
+import { revalidatePath } from "next/cache";
 
 export async function saveBudget(
   input: CalculationInput & { 
-    nomePeca: string; 
-    nomeMaterial: string; 
+    nomePeca?: string; 
+    nomeMaterial?: string; 
     clientId?: string; 
     materialBase?: string;
     prazoEntrega?: string;
@@ -15,53 +16,76 @@ export async function saveBudget(
     materialId?: string;
     pesoTotalG?: number;
     machineId?: string;
+    status?: string;
+    novoClienteNome?: string;
+    formaPagamento?: string;
+    condicoesComerciais?: string;
+    corPeca?: string;
   }, 
-  result: CalculationResult
+  result: CalculationResult,
+  id?: string
 ) {
   try {
-    // Busca o cliente selecionado ou usa o padrão
     let clientId = input.clientId;
-    if (!clientId) {
-      let client = await prisma.client.findFirst();
-      if (!client) {
-        client = await prisma.client.create({
-          data: {
-            name: "Cliente Padrão",
-            email: "contato@cliente.com"
-          }
-        });
-      }
+    
+    // Se for cliente novo (não tem ID)
+    if (clientId === "novo") {
+      const client = await prisma.client.create({
+        data: {
+          name: input.novoClienteNome || "Cliente Sem Nome",
+          phone: "000000000",
+          email: "contato@cliente.com"
+        }
+      });
       clientId = client.id;
     }
 
-    const budget = await prisma.budget.create({
-      data: {
-        nomePeca: input.nomePeca || (input.isLaser ? "Serviço Laser" : "Impressão 3D"),
-        clientId: clientId!, 
-        nomeMaterial: input.isLaser ? (input.materialBase || input.nomeMaterial || "Material Laser") : (input.nomeMaterial || "Material Padrão"),
-        pesoG: input.pesoG || 0,
-        tempoH: Math.round(input.tempoH || 0),
-        tempoM: Math.round(input.tempoM || 0),
-        custoMaterial: result.custoMaterial,
-        custoEnergia: result.custoEnergia,
-        custoMaquina: result.custoMaquina,
-        custoDepreciacao: result.custoDepreciacao,
-        custoTotal: result.custoTotal,
-        margemPercent: input.margemPercent,
-        impostoPercent: input.impostoPercent,
-        setupCost: input.extras.setup || 0,
-        finishingCost: input.extras.acabamento || 0,
-        urgencyCost: input.extras.urgencia || 0,
-        shippingCost: input.extras.frete || 0,
-        precoFinal: result.precoFinal,
-        lucro: result.lucro,
-        prazoEntrega: input.prazoEntrega || null,
-        observacao: input.observacao || null,
-        pdfBase64: input.pdfBase64 || null,
-        machineId: input.machineId || null,
-        status: "PENDENTE",
-      }
-    });
+    const budgetData = {
+      nomePeca: input.nomePeca || (input.isLaser ? "Serviço Laser" : "Impressão 3D"),
+      clientId: clientId!, 
+      nomeMaterial: input.isLaser ? (input.materialBase || input.nomeMaterial || "Material Laser") : (input.nomeMaterial || "Material Padrão"),
+      pesoG: input.pesoG || 0,
+      tempoH: Math.round(input.tempoH || 0),
+      tempoM: Math.round(input.tempoM || 0),
+      custoMaterial: result.custoMaterial,
+      custoEnergia: result.custoEnergia,
+      custoMaquina: result.custoMaquina,
+      custoDepreciacao: result.custoDepreciacao,
+      custoTotal: result.custoTotal,
+      margemPercent: input.margemPercent,
+      impostoPercent: input.impostoPercent,
+      setupCost: input.extras.setup || 0,
+      finishingCost: input.extras.acabamento || 0,
+      urgencyCost: input.extras.urgencia || 0,
+      shippingCost: input.extras.frete || 0,
+      precoFinal: result.precoFinal,
+      lucro: result.lucro,
+      prazoEntrega: input.prazoEntrega || null,
+      observacao: input.observacao || null,
+      pdfBase64: input.pdfBase64 || null,
+      machineId: input.machineId || null,
+      status: input.status || "PENDENTE",
+      formaPagamento: input.formaPagamento || null,
+      condicoesComerciais: input.condicoesComerciais || null,
+      corPeca: input.corPeca || null,
+    };
+
+    let budget;
+    if (id) {
+      // Se já temos um ID, apenas atualizamos
+      budget = await prisma.budget.update({
+        where: { id },
+        data: budgetData
+      });
+    } else {
+      // Se não tem ID, criamos um novo com número oficial
+      budget = await prisma.budget.create({
+        data: {
+          ...budgetData,
+          budgetNumber: await generateBudgetNumber(),
+        }
+      });
+    }
 
     // Consumo de estoque para Impressão 3D (usa o peso total com perda)
     if (!input.isLaser && input.materialId && result.pesoTotalG > 0) {
@@ -75,10 +99,16 @@ export async function saveBudget(
       });
     }
 
-    return { success: true, budgetId: budget.id };
-  } catch (error) {
-    console.error("Erro ao salvar orçamento:", error);
-    return { success: false, error: "Falha ao salvar no banco de dados" };
+    revalidatePath("/dashboard");
+    revalidatePath("/historico");
+    revalidatePath(`/orcamento/${budget.id}`);
+
+    return { success: true, budgetId: budget.id, budgetNumber: budget.budgetNumber, orderNumber: budget.orderNumber };
+  } catch (error: any) {
+    console.error("ERRO CRÍTICO AO SALVAR ORÇAMENTO:");
+    console.error("Mensagem:", error?.message);
+    console.error("Código:", error?.code);
+    return { success: false, error: "Falha ao salvar no banco. Verifique se as novas colunas existem via 'npx prisma db push'." };
   }
 }
 
@@ -103,15 +133,52 @@ export async function getBudgetHistory() {
 
 export async function updateBudgetStatus(id: string, status: string) {
   try {
+    const currentBudget = await prisma.budget.findUnique({ where: { id } });
+    const data: any = { status };
+
+    if (status === "APROVADO" && currentBudget && !currentBudget.orderNumber) {
+      data.orderNumber = await generateOrderNumber();
+    }
+
     const budget = await prisma.budget.update({
       where: { id },
-      data: { status }
+      data
     });
+    
+    revalidatePath("/dashboard");
+    revalidatePath("/historico");
+    revalidatePath(`/orcamento/${id}`);
+
     return { success: true, budget };
   } catch (error) {
     console.error("Erro ao atualizar status do orçamento:", error);
     return { success: false, error: "Falha ao atualizar status" };
   }
+}
+
+async function generateBudgetNumber() {
+  const year = new Date().getFullYear();
+  const count = await prisma.budget.count({
+    where: {
+      createdAt: {
+        gte: new Date(`${year}-01-01`),
+        lte: new Date(`${year}-12-31T23:59:59.999Z`),
+      }
+    }
+  });
+  return `ORÇ-${year}-${(count + 1).toString().padStart(4, '0')}`;
+}
+
+async function generateOrderNumber() {
+  const year = new Date().getFullYear();
+  const count = await prisma.budget.count({
+    where: {
+      orderNumber: { 
+        startsWith: `PED-${year}-` 
+      }
+    }
+  });
+  return `PED-${year}-${(count + 1).toString().padStart(4, '0')}`;
 }
 
 export async function getMaterials() {
@@ -291,6 +358,10 @@ export async function deleteMachine(id: string) {
 export async function deleteBudget(id: string) {
   try {
     await prisma.budget.delete({ where: { id } });
+    
+    revalidatePath("/dashboard");
+    revalidatePath("/historico");
+
     return { success: true };
   } catch (error) {
     console.error("Erro ao excluir orçamento:", error);

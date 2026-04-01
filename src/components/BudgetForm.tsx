@@ -32,13 +32,16 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const BudgetForm = () => {
-  const [input, setInput] = useState<CalculationInput & { nomePeca: string; nomeMaterial: string; clientId?: string; materialId?: string; machineId?: string; materialBase?: string; prazoEntrega: string; observacao: string; perdaTecnicaPercent: number }>({
+  const [input, setInput] = useState<CalculationInput & { nomePeca: string; nomeMaterial: string; clientId?: string; budgetId?: string; materialId?: string; machineId?: string; materialBase?: string; prazoEntrega: string; observacao: string; formaPagamento: string; condicoesComerciais: string; corPeca: string; perdaTecnicaPercent: number }>({
     nomePeca: '',
     nomeMaterial: 'Material Manual',
     clientId: undefined,
     materialId: undefined,
     prazoEntrega: '',
     observacao: '',
+    formaPagamento: 'PIX (5% de desconto)',
+    condicoesComerciais: 'Validade de 7 dias. Entrega conforme disponibilidade.',
+    corPeca: 'Preto (Padrão)',
     pesoG: 0,
     precoKg: 120,
     tempoH: 0,
@@ -134,7 +137,7 @@ const BudgetForm = () => {
           [extraKey as keyof typeof prev.extras]: parseFloat(value) || 0
         }
       }));
-    } else if (name === 'nomePeca' || name === 'prazoEntrega' || name === 'observacao') {
+    } else if (name === 'nomePeca' || name === 'prazoEntrega' || name === 'observacao' || name === 'formaPagamento' || name === 'condicoesComerciais' || name === 'corPeca') {
       setInput(prev => ({ ...prev, [name]: value }));
     } else {
       setInput(prev => ({
@@ -148,163 +151,244 @@ const BudgetForm = () => {
   const filteredMachines = machines.filter((m: any) => {
     if (input.isLaser) return m.tipo === 'LASER';
     return m.tipo === '3D';
-  });
-
-  const handleGeneratePDF = async (shouldSave = true) => {
+  });  const handleGeneratePDF = async (shouldSave = true) => {
     if (!result) return;
+    
+    // 1. Save to get official ID and Numbers first
+    let currentId = input.budgetId || '';
+    let docNumber = 'GERANDO...';
+    let isOrder = false;
+
+    if (shouldSave) {
+      const saveRes = await saveBudget(input, result, currentId);
+      if (saveRes.success) {
+        currentId = saveRes.budgetId as string;
+        docNumber = saveRes.orderNumber || saveRes.budgetNumber || '---';
+        isOrder = !!saveRes.orderNumber;
+        // Atualiza o estado para que saves subsequentes usem o mesmo ID
+        setInput(prev => ({ ...prev, budgetId: currentId }));
+      } else {
+        alert(`❌ ERRO AO SALVAR: ${saveRes.error}`);
+        return; // Interrompe a geração se o banco falhar
+      }
+    }
+
     const doc = new jsPDF();
+    const margin = 14;
     
-    // Configurações e QR Code
-    const budgetUrl = `${window.location.origin}/orcamento/temp`; // Placeholder
-    
-    // Header with company info
-    let headerY = 15;
-    
+    // Colors based on corporate identity
+    const colors = {
+      primary: [31, 58, 95] as [number, number, number],    // #1F3A5F (Azul Sóbrio)
+      secondary: [63, 81, 181] as [number, number, number], // #3F51B5 (Indigo)
+      textMain: [17, 17, 17] as [number, number, number],   // #111111
+      textSub: [43, 43, 43] as [number, number, number],    // #2B2B2B
+      footer: [85, 85, 85] as [number, number, number],     // #555555
+    };
+
+    // --- CABEÇALHO ---
     if (companySettings?.companyLogo) {
       try {
-        doc.addImage(companySettings.companyLogo, 'PNG', 14, 10, 30, 30);
-        headerY = 15;
-      } catch {
-        // If logo fails to load, skip it
+        // Logo robusta (+30%)
+        doc.addImage(companySettings.companyLogo as string, 'PNG', margin, 10, 55, 55);
+      } catch (e) {
+        console.error('Erro ao carregar logo:', e);
       }
     }
     
-    const textX = companySettings?.companyLogo ? 50 : 14;
+    // Alinhamento fino do bloco de texto (+ próximo da logo e alinhado ao topo)
+    const infoX = companySettings?.companyLogo ? 72 : margin;
     
-    if (companySettings?.companyName) {
-      doc.setFontSize(16);
-      doc.setTextColor(40);
-      doc.text(companySettings.companyName, textX, headerY);
-      headerY += 6;
-      
-      doc.setFontSize(9);
-      doc.setTextColor(120);
-      if (companySettings.companyCnpj) {
-        doc.text(`CNPJ: ${companySettings.companyCnpj}`, textX, headerY);
-        headerY += 5;
-      }
-      if (companySettings.companyPhone) {
-        doc.text(`Tel: ${companySettings.companyPhone}`, textX, headerY);
-        headerY += 5;
-      }
-      if (companySettings.companyEmail) {
-        doc.text(`Email: ${companySettings.companyEmail}`, textX, headerY);
-        headerY += 5;
-      }
-      headerY += 2; // Extra spacing before title
-    }
-    
+    // Nome da Empresa em Destaque (Alinhado ao topo da logo)
+    doc.setTextColor(colors.textMain[0], colors.textMain[1], colors.textMain[2]);
     doc.setFontSize(22);
-    doc.setTextColor(79, 70, 229);
-    doc.text('ORÇAMENTO DE PRODUÇÃO', textX, headerY);
+    doc.setFont('helvetica', 'bold');
+    const companyName = companySettings?.companyName || 'S3D World';
+    doc.text(companyName, infoX, 20); // Ajustado Y para 20 para alinhar com o topo da logo
     
-    const startInfoY = Math.max(headerY + 14, companySettings?.companyLogo ? 48 : 28);
+    // Dados da Empresa em tom secundário
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(colors.textSub[0], colors.textSub[1], colors.textSub[2]);
+    let infoY = 26;
     
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, startInfoY);
-    
-    if (input.prazoEntrega) {
-      doc.text(`Prazo Estimado: ${input.prazoEntrega}`, 14, startInfoY + 5);
+    if (companySettings?.companyCnpj) {
+      doc.text(`CNPJ: ${companySettings.companyCnpj}`, infoX, infoY);
+      infoY += 5;
     }
+    if (companySettings?.companyPhone) {
+      doc.text(`Tel: ${companySettings.companyPhone}`, infoX, infoY);
+      infoY += 5;
+    }
+    if (companySettings?.companyEmail) {
+      doc.text(`Email: ${companySettings.companyEmail.toLowerCase()}`, infoX, infoY);
+      infoY += 5;
+    }
+
+    // Identificação do Documento (Superior Direito)
+    doc.setFontSize(11);
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${(isOrder ? 'PEDIDO' : 'ORÇAMENTO').toUpperCase()} Nº ${docNumber}`, 196, 20, { align: 'right' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 196, 25, { align: 'right' });
+
+    // --- TÍTULO DO DOCUMENTO (Mais sóbrio) ---
+    const titleY = 75;
+    doc.setDrawColor(220);
+    doc.setLineWidth(0.1);
+    doc.line(margin, titleY - 10, 196, titleY - 10);
     
-    // Client name
+    doc.setFontSize(18);
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.text(isOrder ? 'Pedido de Produção' : 'Orçamento de Produção', margin, titleY);
+    
+    // --- INFO CLIENTE ---
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.setFont('helvetica', 'normal');
+    doc.text('DADOS DO CLIENTE:', margin, titleY + 12);
+    
     const selectedClient = clients.find(c => c.id === input.clientId);
-    const clientName = selectedClient ? selectedClient.name : 'Cliente Padrão';
+    const clientName = selectedClient ? selectedClient.name : 'CLIENTE AVULSO';
+    
     doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text(`Cliente: ${clientName}`, 14, startInfoY + 12);
+    doc.setTextColor(colors.textMain[0], colors.textMain[1], colors.textMain[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.text(clientName.toUpperCase(), margin, titleY + 18);
+
+    if (input.prazoEntrega) {
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      doc.setFont('helvetica', 'normal');
+      doc.text('PRAZO ESTIMADO:', 196, titleY + 12, { align: 'right' });
+      doc.setTextColor(colors.textMain[0], colors.textMain[1], colors.textMain[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.text(input.prazoEntrega.toUpperCase(), 196, titleY + 18, { align: 'right' });
+    }
+
+    // --- TABELA DE ESPECIFICAÇÕES ---
+    let currentY = titleY + 30;
     
-    // Piece Info
-    doc.text(`Item: ${input.nomePeca || 'Não informada'}`, 14, startInfoY + 20);
-    
-    // Details
     const tableData = input.isLaser ? [
-      ['Tipo de Serviço', `Laser (${input.tipoTrabalho})`],
-      ['Material Base', input.materialBase || 'N/A'],
-      ['Material do Cliente', input.materialCliente ? 'Sim' : 'Não'],
-      ['Custo Item (Shop)', input.materialCliente ? 'R$ 0,00' : `R$ ${formatBRL(input.custoItemBase || 0)}`],
-      ['Tempo Estimado', `${input.tempoH}h ${input.tempoM}m`],
-      ['Impostos Totais', `${input.impostoPercent}%`],
+      ['TIPO DE PROCESSO', `CORTE/GRAVAÇÃO LASER (${input.tipoTrabalho})`],
+      ['COR DA PEÇA', input.corPeca || 'PADRÃO'],
+      ['ORIGEM MATERIAL', input.materialCliente ? 'FORNECIDO PELO CLIENTE' : 'ESTOQUE PRÓPRIO'],
+      ['TEMPO ESTIMADO', `${input.tempoH}h ${input.tempoM}m`],
     ] : [
-      ['Tipo de Serviço', 'Impressão 3D'],
-      ['Peso da Peça', `${input.pesoG}g`],
-      ['Tempo Estimado', `${input.tempoH}h ${input.tempoM}m`],
-      ['Material Utilizado', input.nomeMaterial],
-      ['Preço do Material', `R$ ${formatBRL(input.precoKg)}/kg`],
-      ['Impostos Totais', `${input.impostoPercent}%`],
+      ['TIPO DE PROCESSO', 'MANUFATURA ADITIVA (IMPRESSÃO 3D)'],
+      ['PESO ESTIMADO', `${input.pesoG}g`],
+      ['TEMPO DE PRODUÇÃO', `${input.tempoH}h ${input.tempoM}m`],
+      ['COR DA PEÇA', input.corPeca.toUpperCase()],
     ];
     
     autoTable(doc, {
-      startY: startInfoY + 28,
-      head: [['Item', 'Valor']],
+      startY: currentY,
+      head: [['ESPECIFICAÇÃO TÉCNICA', 'DETALHES DO PROJETO']],
       body: tableData,
       theme: 'striped',
-      headStyles: { fillColor: [79, 70, 229] }
+      headStyles: { fillColor: colors.secondary, textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { cellPadding: 4, fontSize: 9, cellWidth: 'wrap' },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
+      alternateRowStyles: { fillColor: [242, 242, 242] } // Zebra levemente mais contrastada
     });
     
-    // Totals
-    let finalY = (doc as any).lastAutoTable.finalY + 10;
-    
-    if (input.observacao) {
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Observações:', 14, finalY);
-      doc.setFontSize(9);
-      doc.setTextColor(120);
-      const splitObs = doc.splitTextToSize(input.observacao, 180);
-      doc.text(splitObs, 14, finalY + 5);
-      finalY += (splitObs.length * 5) + 10;
-    }
+    currentY = (doc as any).lastAutoTable.finalY + 15;
 
-    doc.setFontSize(14);
-    doc.setTextColor(0);
-    doc.text('RESUMO FINANCEIRO', 14, finalY);
-    
+    // --- RESUMO FINANCEIRO ---
+    doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    doc.setLineWidth(0.5);
+    doc.line(120, currentY, 196, currentY); // Divisória antes do resumo
+
     const totalsData = [
-      ['Custo de Produção Total', `R$ ${formatBRL(result.custoTotal)}`],
-      ['Total em Adicionais/Extras', `R$ ${formatBRL(result.somaExtras)}`],
-      ['Valor do Imposto', `R$ ${formatBRL(result.valorImposto)}`],
-      ['', ''],
       ['VALOR TOTAL FINAL', `R$ ${formatBRL(result.precoFinal)}`],
     ];
     
     autoTable(doc, {
-      startY: finalY + 5,
+      startY: currentY + 2,
       body: totalsData,
       theme: 'plain',
-      styles: { fontSize: 12, fontStyle: 'bold' }
-    });
-    
-    const finalTableY = (doc as any).lastAutoTable.finalY;
-
-    // QR CODE - Only if we are saving (to get ID) or as a placeholder
-    // We'll save first to get the ID, then update with PDF including real QR
-    let budgetId = '';
-    if (shouldSave) {
-      // 1. Save without PDF initially to get ID
-      const saveRes = await saveBudget(input, result);
-      if (saveRes.success && saveRes.budgetId) {
-        budgetId = saveRes.budgetId;
-        
-        // 2. Generate real QR
-        const realUrl = `${window.location.origin}/orcamento/${budgetId}`;
-        const qrDataUrl = await QRCode.toDataURL(realUrl);
-        
-        // 3. Add QR to doc
-        doc.addImage(qrDataUrl, 'PNG', 160, finalTableY + 5, 30, 30);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text('Escaneie para ver online', 160, finalTableY + 38);
-
-        // 4. Update with final PDF (base64)
-        const pdfBase64 = doc.output('datauristring');
-        await saveBudget({ ...input, pdfBase64 }, result);
+      styles: { fontSize: 10, cellPadding: 3 },
+      columnStyles: { 
+        0: { cellWidth: 100, halign: 'right' },
+        1: { halign: 'right', fontStyle: 'bold', cellWidth: 40 } 
+      },
+      didParseCell: function(data) {
+        if (data.row.index === 0) {
+          data.cell.styles.fontSize = 16;
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.textColor = colors.primary;
+        }
       }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 10;
+
+    // --- CONDIÇÕES COMERCIAIS (NOVA SEÇÃO) ---
+    doc.setDrawColor(240);
+    doc.setFillColor(252, 252, 252);
+    doc.roundedRect(margin, currentY, 182, 25, 3, 3, 'FD');
+    
+    doc.setFontSize(8);
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CONDIÇÕES COMERCIAIS:', margin + 5, currentY + 7);
+    
+    doc.setFontSize(8);
+    doc.setTextColor(colors.textSub[0], colors.textSub[1], colors.textSub[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`FORMA DE PAGAMENTO: ${input.formaPagamento.toUpperCase()}`, margin + 5, currentY + 13);
+    
+    const splitCond = doc.splitTextToSize(`TERMOS: ${input.condicoesComerciais}`, 170);
+    doc.text(splitCond, margin + 5, currentY + 18);
+
+    currentY += 32;
+
+    // --- OBSERVAÇÕES E VALIDADE ---
+    doc.setFontSize(9);
+    doc.setTextColor(colors.textSub[0], colors.textSub[1], colors.textSub[2]);
+    
+    if (input.observacao) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('OBSERVAÇÕES:', margin, currentY);
+      doc.setFont('helvetica', 'normal');
+      const splitObs = doc.splitTextToSize(input.observacao, 100);
+      doc.text(splitObs, margin, currentY + 5);
+      currentY += (splitObs.length * 5) + 5;
     }
 
-    doc.save(`orcamento_${input.nomePeca || 'producao'}_${new Date().getTime()}.pdf`);
-    return budgetId;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    doc.text('VALIDADE DO ORÇAMENTO: 7 DIAS', margin, currentY + 5);
+
+    // --- QR CODE (RESTAURADO E TOP) ---
+    if (shouldSave && currentId) {
+      const realUrl = `${window.location.origin}/orcamento/${currentId}`;
+      const qrDataUrl = await QRCode.toDataURL(realUrl);
+      // Subido ~10px e aproximado do bloco financeiro
+      doc.addImage(qrDataUrl, 'PNG', 165, currentY - 25, 31, 31);
+      doc.setFontSize(7);
+      doc.setTextColor(150);
+      doc.text('ESCANEE PARA VER ONLINE', 196, currentY + 10, { align: 'right' });
+    }
+
+    // 11. Final Save with PDF Content
+    const pdfBase64 = doc.output('datauristring');
+    if (shouldSave && currentId) {
+      await saveBudget({ ...input, pdfBase64 }, result, currentId);
+    }
+
+    // --- RODAPÉ CENTRALIZADO (Case elegante) ---
+    const footerY = 285;
+    doc.setFontSize(8);
+    doc.setTextColor(colors.footer[0], colors.footer[1], colors.footer[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`© ${new Date().getFullYear()} S3D World · Todos os direitos reservados`, 105, footerY, { align: 'center' });
+
+    doc.save(`${isOrder ? 'PEDIDO' : 'ORCAMENTO'}_${docNumber}.pdf`);
+    return currentId;
   };
 
   const handleWhatsApp = async () => {
@@ -516,7 +600,7 @@ const BudgetForm = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1 tracking-wider">Prazo de Entrega</label>
               <input 
@@ -529,6 +613,17 @@ const BudgetForm = () => {
               />
             </div>
             <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-indigo-500 uppercase ml-1 tracking-widest">Cor da Peça 🔥</label>
+              <input 
+                type="text" 
+                name="corPeca"
+                value={input.corPeca}
+                onChange={handleInputChange as any}
+                className="w-full bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white font-black italic"
+                placeholder="Ex: Verde Neon / Preto"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1 tracking-wider">Observações (Interno/PDF)</label>
               <input 
                 type="text" 
@@ -537,6 +632,31 @@ const BudgetForm = () => {
                 onChange={handleInputChange as any}
                 className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-zinc-100 text-zinc-800 font-bold placeholder:font-normal"
                 placeholder="Detalhes adicionais..."
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-indigo-500 uppercase ml-1 tracking-widest">Forma de Pagamento</label>
+              <input 
+                type="text" 
+                name="formaPagamento"
+                value={input.formaPagamento}
+                onChange={handleInputChange as any}
+                className="w-full bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white font-black italic"
+                placeholder="Ex: PIX / Cartão 12x"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1 tracking-wider">Condições Comerciais</label>
+              <input 
+                type="text" 
+                name="condicoesComerciais"
+                value={input.condicoesComerciais}
+                onChange={handleInputChange as any}
+                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-zinc-100 text-zinc-800 font-bold placeholder:font-normal"
+                placeholder="Ex: Validade, entrega..."
               />
             </div>
           </div>

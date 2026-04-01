@@ -97,5 +97,10 @@ model Budget {
   cliente        Client   @relation(fields: [clientId], references: [id])
   machineId      String?
   machine        Machine? @relation(fields: [machineId], references: [id])
-  status         String   @default("PENDENTE")
+  status           String   @default("PENDENTE")
+  budgetNumber     String?  @unique
+  orderNumber      String?  @unique
+  formaPagamento   String?
+  condicoesComerciais String?
+  corPeca          String?
 }

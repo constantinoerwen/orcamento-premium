@@ -39,7 +39,7 @@ export default async function PublicBudgetPage({ params }: { params: { id: strin
               <ArrowLeft size={16} /> Voltar para Orçamento
             </Link>
             <h1 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter italic">
-              ORÇAMENTO <span className="text-indigo-600">#{budget.id.slice(-4).toUpperCase()}</span>
+              {budget.orderNumber ? 'PEDIDO' : 'ORÇAMENTO'} <span className="text-indigo-600">{budget.orderNumber || budget.budgetNumber || `#${budget.id.slice(-4).toUpperCase()}`}</span>
             </h1>
             <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium">
               Documento gerado em {new Date(budget.createdAt).toLocaleDateString('pt-BR')}
@@ -93,11 +93,32 @@ export default async function PublicBudgetPage({ params }: { params: { id: strin
                   label="Tipo de Serviço" 
                   value={budget.tipoServico === 'LASER' ? "Corte/Gravação Laser" : "Impressão 3D"} 
                 />
+                <InfoRow 
+                  icon={<div className="w-4 h-4 rounded-full border border-zinc-200" style={{ backgroundColor: budget.corPeca?.toLowerCase().includes('preto') ? '#000' : budget.corPeca?.toLowerCase().includes('branco') ? '#fff' : '#6366f1' }} />} 
+                  label="Cor da Peça" 
+                  value={budget.corPeca || "Padrão"} 
+                />
+              </div>
+
+              {/* Novas Seções Comerciais */}
+              <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="p-6 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                  <h3 className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2">Pagamento</h3>
+                  <p className="text-zinc-900 dark:text-zinc-100 font-black italic">
+                    {budget.formaPagamento || "A combinar na aprovação"}
+                  </p>
+                </div>
+                <div className="p-6 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Condições</h3>
+                  <p className="text-zinc-700 dark:text-zinc-300 font-medium text-sm leading-relaxed">
+                    {budget.condicoesComerciais || "Entrega conforme prazo estipulado."}
+                  </p>
+                </div>
               </div>
 
               {budget.observacao && (
-                <div className="mt-10 p-6 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Observações Adicionais</h3>
+                <div className="mt-8 p-6 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-700">
+                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Notas do Projeto</h3>
                   <p className="text-zinc-600 dark:text-zinc-300 font-medium leading-relaxed italic">
                     "{budget.observacao}"
                   </p>
@@ -105,39 +126,40 @@ export default async function PublicBudgetPage({ params }: { params: { id: strin
               )}
             </div>
           </div>
-
+  
           {/* Pricing Card */}
-          <div className="space-y-6">
-            <div className="bg-zinc-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-                <CheckCircle2 size={120} />
+            <div className="space-y-6">
+              <div className="bg-zinc-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
+                 <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+                  <CheckCircle2 size={120} />
+                </div>
+  
+                <div className="relative z-10">
+                  <span className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Valor Final</span>
+                  <div className="text-5xl font-black text-indigo-400 mt-2 mb-8">
+                    R$ {formatBRL(budget.precoFinal)}
+                  </div>
+  
+                  <div className="space-y-4 pt-6 border-t border-white/10">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-400">Status</span>
+                      <span className="text-emerald-400 font-bold">Documento Ativo</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-400">Garantia</span>
+                      <span className="text-zinc-200 font-bold">12 Meses</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              <div className="relative z-10">
-                <span className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Valor Final</span>
-                <div className="text-5xl font-black text-indigo-400 mt-2 mb-8">
-                  R$ {formatBRL(budget.precoFinal)}
-                </div>
-
-                <div className="space-y-4 pt-6 border-t border-white/10">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-400">Status</span>
-                    <span className="text-emerald-400 font-bold">Válido</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-400">Garantia</span>
-                    <span className="text-zinc-200 font-bold">Inclusa</span>
-                  </div>
-                </div>
+  
+              <div className="p-6 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 text-center">
+                <p className="text-zinc-500 text-xs font-medium leading-relaxed">
+                  Geramos com precisão e entregamos com compromisso. <br/>
+                  <span className="text-indigo-400">S3D WORLD</span>
+                </p>
               </div>
             </div>
-
-            <div className="p-6 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 text-center">
-              <p className="text-zinc-500 text-xs font-medium leading-relaxed">
-                Este orçamento tem validade de 10 dias a partir da data de emissão.
-              </p>
-            </div>
-          </div>
         </div>
       </main>
     </div>
