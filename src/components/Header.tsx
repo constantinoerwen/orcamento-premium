@@ -45,9 +45,13 @@ const Header = () => {
     <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-black/50 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <div className="bg-indigo-600 p-1.5 rounded-lg text-white">
-            <TrendingUp size={20} />
-          </div>
+          {settings?.companyLogo ? (
+            <img src={settings.companyLogo} alt="Logo" className="h-8 w-auto object-contain rounded-md" />
+          ) : (
+            <div className="bg-indigo-600 p-1.5 rounded-lg text-white">
+              <TrendingUp size={20} />
+            </div>
+          )}
           <span className="font-black text-xl tracking-tighter uppercase italic dark:text-white">
             {firstWord}<span className="text-indigo-600 font-black">{restWords}</span>
           </span>
