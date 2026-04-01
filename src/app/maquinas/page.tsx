@@ -103,8 +103,8 @@ export default function MaquinasPage() {
             </h1>
             <p className="text-zinc-500 mt-1 font-medium">Controle seus equipamentos de impressão 3D e corte laser</p>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => {
               if (showForm) {
                 setShowForm(false);
@@ -134,7 +134,7 @@ export default function MaquinasPage() {
 
         <AnimatePresence>
           {showForm && (
-            <motion.div 
+            <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -142,9 +142,18 @@ export default function MaquinasPage() {
             >
               <form onSubmit={handleSubmit} className="bg-white dark:bg-zinc-900 rounded-3xl p-8 border border-zinc-200 dark:border-zinc-800 shadow-xl grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-4">
-                  <InputField label="Nome do Equipamento" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Impressora Principal" icon={<Tag size={16}/>} required />
-                  <InputField label="Marca" name="marca" value={formData.marca} onChange={handleInputChange} placeholder="Ex: Bambu Lab" icon={<Building2 size={16}/>} required />
-                  <InputField label="Modelo" name="modelo" value={formData.modelo} onChange={handleInputChange} placeholder="Ex: P1S Combo" icon={<Info size={16}/>} required />
+                  <InputField label="Nome do Equipamento" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Impressora Principal" icon={<Tag size={16} />} required />
+                  <InputField label="Marca" name="marca" value={formData.marca} onChange={handleInputChange} placeholder="Ex: Bambu Lab" icon={<Building2 size={16} />} required />
+                  <InputField label="Modelo" name="modelo" value={formData.modelo} onChange={handleInputChange} placeholder="Ex: P1S Combo" icon={<Info size={16} />} required />
+
+                  <InputField
+                    label="Custo da Máquina (R$)"
+                    name="precoAquisicao"
+                    value={formData.precoAquisicao}
+                    onChange={handleInputChange}
+                    placeholder="8000"
+                    type="number"
+                  />
                 </div>
 
                 <div className="space-y-4">
@@ -155,13 +164,13 @@ export default function MaquinasPage() {
                       <option value="LASER">Máquina Laser</option>
                     </select>
                   </div>
-                  <InputField label="Número de Série" name="numeroSerie" value={formData.numeroSerie} onChange={handleInputChange} placeholder="Ex: SN123456" icon={<Database size={16}/>} required />
-                  <InputField label="Data de Aquisição" name="dataAquisicao" value={formData.dataAquisicao} onChange={handleInputChange} type="date" icon={<Calendar size={16}/>} />
+                  <InputField label="Número de Série" name="numeroSerie" value={formData.numeroSerie} onChange={handleInputChange} placeholder="Ex: SN123456" icon={<Database size={16} />} required />
+                  <InputField label="Data de Aquisição" name="dataAquisicao" value={formData.dataAquisicao} onChange={handleInputChange} type="date" icon={<Calendar size={16} />} />
                 </div>
 
                 <div className="space-y-4">
-                  <InputField label="Custo Operacional/Hora (R$)" name="custoMaquinaH" value={formData.custoMaquinaH} onChange={handleInputChange} placeholder="5.00" icon={<Cpu size={16}/>} type="number" />
-                  <InputField label="Custo Energia/Hora (R$)" name="custoEnergiaH" value={formData.custoEnergiaH} onChange={handleInputChange} placeholder="0.50" icon={<Zap size={16}/>} type="number" />
+                  <InputField label="Custo Operacional/Hora (R$)" name="custoMaquinaH" value={formData.custoMaquinaH} onChange={handleInputChange} placeholder="5.00" icon={<Cpu size={16} />} type="number" />
+                  <InputField label="Custo Energia/Hora (R$)" name="custoEnergiaH" value={formData.custoEnergiaH} onChange={handleInputChange} placeholder="0.50" icon={<Zap size={16} />} type="number" />
                 </div>
 
                 <div className="md:col-span-3 flex justify-end pt-4">
@@ -220,32 +229,32 @@ export default function MaquinasPage() {
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex items-center gap-2">
-                           {m.tipo === 'LASER' ? (
-                             <span className="p-2 bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-lg"><Target size={16}/></span>
-                           ) : (
-                             <span className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg"><Cpu size={16}/></span>
-                           )}
-                           <span className="text-xs font-black uppercase tracking-widest">{m.tipo}</span>
+                          {m.tipo === 'LASER' ? (
+                            <span className="p-2 bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-lg"><Target size={16} /></span>
+                          ) : (
+                            <span className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg"><Cpu size={16} /></span>
+                          )}
+                          <span className="text-xs font-black uppercase tracking-widest">{m.tipo}</span>
                         </div>
                       </td>
                       <td className="px-6 py-6 font-bold text-zinc-700 dark:text-zinc-300">
-                         {m.precoAquisicao ? `R$ ${formatBRL(m.precoAquisicao)}` : '---'}
+                        {m.precoAquisicao ? `R$ ${formatBRL(m.precoAquisicao)}` : '---'}
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex flex-col">
-                           <span className="text-sm font-black text-zinc-900 dark:text-white italic">R$ {formatBRL(m.custoMaquinaH + m.custoEnergiaH)}/h</span>
-                           <span className="text-[9px] text-zinc-400 uppercase font-black tracking-widest">Base + Energia</span>
+                          <span className="text-sm font-black text-zinc-900 dark:text-white italic">R$ {formatBRL(m.custoMaquinaH + m.custoEnergiaH)}/h</span>
+                          <span className="text-[9px] text-zinc-400 uppercase font-black tracking-widest">Base + Energia</span>
                         </div>
                       </td>
                       <td className="px-6 py-6 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button 
+                          <button
                             onClick={() => handleEdit(m)}
                             className="p-2 hover:bg-indigo-500/10 text-zinc-400 hover:text-indigo-600 rounded-xl transition-all"
                           >
                             <Edit2 size={18} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDelete(m.id)}
                             className="p-2 hover:bg-red-500/10 text-zinc-400 hover:text-red-600 rounded-xl transition-all"
                           >
@@ -270,8 +279,8 @@ const InputField = ({ label, name, value, onChange, placeholder, icon, type = "t
     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-1">{label}</label>
     <div className="relative">
       {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">{icon}</div>}
-      <input 
-        type={type} 
+      <input
+        type={type}
         name={name}
         value={value}
         onChange={onChange}
