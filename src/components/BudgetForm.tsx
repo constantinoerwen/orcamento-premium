@@ -24,7 +24,6 @@ import {
   User,
   Plus,
   Check,
-  Search,
   ArrowRight
 } from 'lucide-react';
 

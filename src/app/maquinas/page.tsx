@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { getMachines, createMachine, updateMachine, deleteMachine } from '@/app/actions/budget';
 import { formatBRL } from '@/lib/currency';
-import { Plus, Cpu, Calendar, Tag, Info, DollarSign, Database, ArrowRight, Zap, Target, Edit2, Trash2, Building2 } from 'lucide-react';
+import { Plus, Cpu, Calendar, Tag, Info, Database, ArrowRight, Zap, Target, Edit2, Trash2, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MaquinasPage() {

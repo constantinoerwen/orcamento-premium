@@ -9,11 +9,8 @@ import {
   DollarSign, 
   Zap, 
   Database, 
-  Calendar, 
   ArrowUpRight, 
-  ArrowDownRight,
   ShieldCheck,
-  AlertCircle,
   Briefcase
 } from "lucide-react";
 import Link from "next/link";

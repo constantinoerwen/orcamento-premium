@@ -1,6 +1,6 @@
 import { getBudgetHistory } from "@/app/actions/budget";
 import { formatBRL } from "@/lib/currency";
-import { TrendingUp, ArrowLeft, Calendar, User, Package, DollarSign, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, Calendar, User, Package, DollarSign, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import DeleteBudgetButton from "@/components/DeleteBudgetButton";
