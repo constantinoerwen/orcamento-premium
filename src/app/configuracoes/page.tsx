@@ -7,6 +7,55 @@ import Header from '@/components/Header';
 import { motion } from 'framer-motion';
 import { Settings, Save, User, Mail, Lock, Shield, CheckCircle2, ChevronDown, ChevronUp, Users, ImageIcon, X } from 'lucide-react';
 
+
+const Section = ({ id, title, icon, children, openSection, setOpenSection }: { id: string; title: string; icon: React.ReactNode; children: React.ReactNode; openSection: string | null; setOpenSection: any }) => (
+  <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+    <button
+      type="button"
+      onClick={() => setOpenSection(openSection === id ? null : id)}
+      className="w-full flex items-center justify-between p-6 text-left"
+    >
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-500">{icon}</div>
+        <span className="font-black text-zinc-900 dark:text-white italic uppercase tracking-tight">{title}</span>
+      </div>
+      {openSection === id ? <ChevronUp size={18} className="text-zinc-400" /> : <ChevronDown size={18} className="text-zinc-400" />}
+    </button>
+    {openSection === id && (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-6 pb-6 space-y-4 border-t border-zinc-100 dark:border-zinc-800 pt-5">
+        {children}
+      </motion.div>
+    )}
+  </div>
+);
+
+const Field = ({ label, path, placeholder, textarea, settings, handleChange }: { label: string; path: string; placeholder?: string; textarea?: boolean; settings: any; handleChange: any }) => {
+  const parts = path.split('.');
+  const value = parts.length === 1 ? settings[parts[0]] : settings[parts[0]]?.[parts[1]];
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{label}</label>
+      {textarea ? (
+        <textarea
+          value={value || ''}
+          onChange={e => handleChange(path, e.target.value)}
+          rows={3}
+          className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 rounded-2xl text-zinc-900 dark:text-white font-medium resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder={placeholder}
+        />
+      ) : (
+        <input
+          type="text"
+          value={value || ''}
+          onChange={e => handleChange(path, e.target.value)}
+          className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 rounded-2xl text-zinc-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder={placeholder}
+        />
+      )}
+    </div>
+  );
+};
+
 export default function ConfiguracoesPage() {
   const [settings, setSettings] = useState<AppSettingsData | null>(null);
   const [saved, setSaved] = useState(false);
@@ -78,54 +127,6 @@ export default function ConfiguracoesPage() {
     );
   }
 
-  const Section = ({ id, title, icon, children }: { id: string; title: string; icon: React.ReactNode; children: React.ReactNode }) => (
-    <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-      <button
-        type="button"
-        onClick={() => setOpenSection(openSection === id ? null : id)}
-        className="w-full flex items-center justify-between p-6 text-left"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-500">{icon}</div>
-          <span className="font-black text-zinc-900 dark:text-white italic uppercase tracking-tight">{title}</span>
-        </div>
-        {openSection === id ? <ChevronUp size={18} className="text-zinc-400" /> : <ChevronDown size={18} className="text-zinc-400" />}
-      </button>
-      {openSection === id && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-6 pb-6 space-y-4 border-t border-zinc-100 dark:border-zinc-800 pt-5">
-          {children}
-        </motion.div>
-      )}
-    </div>
-  );
-
-  const Field = ({ label, path, placeholder, textarea }: { label: string; path: string; placeholder?: string; textarea?: boolean }) => {
-    const parts = path.split('.');
-    const value = parts.length === 1 ? (settings as any)[parts[0]] : (settings as any)[parts[0]]?.[parts[1]];
-    return (
-      <div className="space-y-1.5">
-        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{label}</label>
-        {textarea ? (
-          <textarea
-            value={value}
-            onChange={e => handleChange(path, e.target.value)}
-            rows={3}
-            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 rounded-2xl text-zinc-900 dark:text-white font-medium resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder={placeholder}
-          />
-        ) : (
-          <input
-            type="text"
-            value={value}
-            onChange={e => handleChange(path, e.target.value)}
-            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 rounded-2xl text-zinc-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder={placeholder}
-          />
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <Header />
@@ -149,12 +150,12 @@ export default function ConfiguracoesPage() {
           </button>
         </div>
 
-        <Section id="identity" title="Identidade da Empresa" icon={<Shield size={18} />}>
-          <Field label="Nome da Empresa (exibido no menu)" path="companyName" placeholder="Ex: Minha Empresa" />
-          <Field label="CNPJ (Opcional)" path="companyCnpj" placeholder="00.000.000/0001-00" />
-          <Field label="Telefone (Opcional)" path="companyPhone" placeholder="(00) 00000-0000" />
-          <Field label="Email (Opcional)" path="companyEmail" placeholder="contato@empresa.com" />
-          <Field label="Texto do Rodapé" path="footerText" placeholder="Ex: Todos os direitos reservados." />
+        <Section openSection={openSection} setOpenSection={setOpenSection} id="identity" title="Identidade da Empresa" icon={<Shield size={18} />}>
+          <Field settings={settings} handleChange={handleChange} label="Nome da Empresa (exibido no menu)" path="companyName" placeholder="Ex: Minha Empresa" />
+          <Field settings={settings} handleChange={handleChange} label="CNPJ (Opcional)" path="companyCnpj" placeholder="00.000.000/0001-00" />
+          <Field settings={settings} handleChange={handleChange} label="Telefone (Opcional)" path="companyPhone" placeholder="(00) 00000-0000" />
+          <Field settings={settings} handleChange={handleChange} label="Email (Opcional)" path="companyEmail" placeholder="contato@empresa.com" />
+          <Field settings={settings} handleChange={handleChange} label="Texto do Rodapé" path="footerText" placeholder="Ex: Todos os direitos reservados." />
           
           <div className="flex flex-col gap-1.5 pt-2">
             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Logo da Empresa</label>
@@ -188,20 +189,20 @@ export default function ConfiguracoesPage() {
           </div>
         </Section>
 
-        <Section id="hero" title="Página Inicial (Hero)" icon={<Settings size={18} />}>
-          <Field label="Badge / Chamada pequena" path="heroBadge" placeholder="Ex: O futuro chegou" />
-          <Field label="Título Principal" path="heroTitle" placeholder="Ex: ORÇAMENTOS PRECISOS" />
-          <Field label="Subtítulo / Descrição" path="heroSubtitle" placeholder="Ex: A plataforma definitiva..." textarea />
+        <Section openSection={openSection} setOpenSection={setOpenSection} id="hero" title="Página Inicial (Hero)" icon={<Settings size={18} />}>
+          <Field settings={settings} handleChange={handleChange} label="Badge / Chamada pequena" path="heroBadge" placeholder="Ex: O futuro chegou" />
+          <Field settings={settings} handleChange={handleChange} label="Título Principal" path="heroTitle" placeholder="Ex: ORÇAMENTOS PRECISOS" />
+          <Field settings={settings} handleChange={handleChange} label="Subtítulo / Descrição" path="heroSubtitle" placeholder="Ex: A plataforma definitiva..." textarea />
         </Section>
 
-        <Section id="menus" title="Rótulos dos Menus" icon={<Settings size={18} />}>
+        <Section openSection={openSection} setOpenSection={setOpenSection} id="menus" title="Rótulos dos Menus" icon={<Settings size={18} />}>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Novo Orçamento" path="menuLabels.orcamento" />
-            <Field label="Dashboard" path="menuLabels.dashboard" />
-            <Field label="Materiais" path="menuLabels.materiais" />
-            <Field label="Máquinas" path="menuLabels.maquinas" />
-            <Field label="Clientes" path="menuLabels.clientes" />
-            <Field label="Configurações" path="menuLabels.configuracoes" />
+            <Field settings={settings} handleChange={handleChange} label="Novo Orçamento" path="menuLabels.orcamento" />
+            <Field settings={settings} handleChange={handleChange} label="Dashboard" path="menuLabels.dashboard" />
+            <Field settings={settings} handleChange={handleChange} label="Materiais" path="menuLabels.materiais" />
+            <Field settings={settings} handleChange={handleChange} label="Máquinas" path="menuLabels.maquinas" />
+            <Field settings={settings} handleChange={handleChange} label="Clientes" path="menuLabels.clientes" />
+            <Field settings={settings} handleChange={handleChange} label="Configurações" path="menuLabels.configuracoes" />
           </div>
         </Section>
 
