@@ -4,6 +4,10 @@ import { prisma } from '@/lib/prisma';
 
 export type AppSettingsData = {
   companyName: string;
+  companyCnpj?: string;
+  companyPhone?: string;
+  companyEmail?: string;
+  companyLogo?: string | null;
   heroTitle: string;
   heroSubtitle: string;
   heroBadge: string;
@@ -20,6 +24,10 @@ export type AppSettingsData = {
 
 const defaultSettings: AppSettingsData = {
   companyName: 'PremiumBudget',
+  companyCnpj: '',
+  companyPhone: '',
+  companyEmail: '',
+  companyLogo: null,
   heroTitle: 'ORÇAMENTOS ULTRA PRECISOS',
   heroSubtitle: 'A plataforma definitiva para gerenciar sua produção. Cálculos cirúrgicos para Impressão 3D e Laser em segundos.',
   heroBadge: 'O futuro da manufatura chegou',

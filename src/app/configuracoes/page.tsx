@@ -5,7 +5,7 @@ import { getSettings, saveSettings, type AppSettingsData } from '@/app/actions/s
 import { createUser } from '@/app/actions/auth';
 import Header from '@/components/Header';
 import { motion } from 'framer-motion';
-import { Settings, Save, User, Mail, Lock, Shield, CheckCircle2, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Settings, Save, User, Mail, Lock, Shield, CheckCircle2, ChevronDown, ChevronUp, Users, ImageIcon, X } from 'lucide-react';
 
 export default function ConfiguracoesPage() {
   const [settings, setSettings] = useState<AppSettingsData | null>(null);
@@ -19,7 +19,7 @@ export default function ConfiguracoesPage() {
     getSettings().then(setSettings);
   }, []);
 
-  function handleChange(path: string, value: string) {
+  function handleChange(path: string, value: string | null) {
     setSettings(prev => {
       if (!prev) return prev;
       const parts = path.split('.');
@@ -32,6 +32,21 @@ export default function ConfiguracoesPage() {
       return updated;
     });
   }
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      handleChange('companyLogo', dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveLogo = () => {
+    handleChange('companyLogo', null);
+  };
 
   function handleSave() {
     if (!settings) return;
@@ -136,7 +151,41 @@ export default function ConfiguracoesPage() {
 
         <Section id="identity" title="Identidade da Empresa" icon={<Shield size={18} />}>
           <Field label="Nome da Empresa (exibido no menu)" path="companyName" placeholder="Ex: Minha Empresa" />
+          <Field label="CNPJ (Opcional)" path="companyCnpj" placeholder="00.000.000/0001-00" />
+          <Field label="Telefone (Opcional)" path="companyPhone" placeholder="(00) 00000-0000" />
+          <Field label="Email (Opcional)" path="companyEmail" placeholder="contato@empresa.com" />
           <Field label="Texto do Rodapé" path="footerText" placeholder="Ex: Todos os direitos reservados." />
+          
+          <div className="flex flex-col gap-1.5 pt-2">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Logo da Empresa</label>
+            {settings.companyLogo ? (
+              <div className="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700">
+                <img src={settings.companyLogo} alt="Logo" className="w-16 h-16 object-contain rounded-xl" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-zinc-900 dark:text-white">Logo carregada</p>
+                  <p className="text-xs text-zinc-500">Será exibida no cabeçalho do PDF</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveLogo}
+                  className="p-2 hover:bg-red-500/10 text-zinc-400 hover:text-red-500 rounded-xl transition-all"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center gap-3 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-700 cursor-pointer hover:border-indigo-400 transition-colors">
+                <ImageIcon size={20} className="text-zinc-400" />
+                <span className="text-sm text-zinc-500 font-medium">Clique para enviar a logo</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleLogoUpload} 
+                  className="hidden" 
+                />
+              </label>
+            )}
+          </div>
         </Section>
 
         <Section id="hero" title="Página Inicial (Hero)" icon={<Settings size={18} />}>

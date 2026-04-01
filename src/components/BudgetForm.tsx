@@ -5,6 +5,7 @@ import { calculateBudget, CalculationInput, CalculationResult, getSmartMarginAle
 import { formatBRL } from '@/lib/currency';
 import { motion, AnimatePresence } from 'framer-motion';
 import { saveBudget, getMaterials, getClients, getMachines, createClient } from '@/app/actions/budget';
+import { getSettings } from '@/app/actions/settings';
 import { 
   Calculator, 
   FileText, 
@@ -66,11 +67,8 @@ const BudgetForm = () => {
   const [materials, setMaterials] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [machines, setMachines] = useState<any[]>([]);
+  const [companySettings, setCompanySettings] = useState<any>(null);
 
-  // Company settings (persisted in localStorage)
-  const [companyName, setCompanyName] = useState('');
-  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
-  const [showCompanySettings, setShowCompanySettings] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Estados para Busca de Cliente
@@ -110,18 +108,13 @@ const BudgetForm = () => {
 
   useEffect(() => {
     async function loadData() {
-      const [mats, cls, macs] = await Promise.all([getMaterials(), getClients(), getMachines()]);
+      const [mats, cls, macs, sets] = await Promise.all([getMaterials(), getClients(), getMachines(), getSettings()]);
       setMaterials(mats);
       setClients(cls);
       setMachines(macs);
+      setCompanySettings(sets);
     }
     loadData();
-
-    // Load company settings from localStorage
-    const savedName = localStorage.getItem('companyName');
-    const savedLogo = localStorage.getItem('companyLogo');
-    if (savedName) setCompanyName(savedName);
-    if (savedLogo) setCompanyLogo(savedLogo);
   }, []);
 
   useEffect(() => {
@@ -129,27 +122,7 @@ const BudgetForm = () => {
     setResult(res);
   }, [input]);
 
-  const handleCompanyNameChange = (name: string) => {
-    setCompanyName(name);
-    localStorage.setItem('companyName', name);
-  };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      setCompanyLogo(dataUrl);
-      localStorage.setItem('companyLogo', dataUrl);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveLogo = () => {
-    setCompanyLogo(null);
-    localStorage.removeItem('companyLogo');
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -188,29 +161,45 @@ const BudgetForm = () => {
     // Header with company info
     let headerY = 15;
     
-    if (companyLogo) {
+    if (companySettings?.companyLogo) {
       try {
-        doc.addImage(companyLogo, 'PNG', 14, 10, 30, 30);
-        headerY = 18;
+        doc.addImage(companySettings.companyLogo, 'PNG', 14, 10, 30, 30);
+        headerY = 15;
       } catch {
         // If logo fails to load, skip it
       }
     }
     
-    const textX = companyLogo ? 50 : 14;
+    const textX = companySettings?.companyLogo ? 50 : 14;
     
-    if (companyName) {
+    if (companySettings?.companyName) {
       doc.setFontSize(16);
       doc.setTextColor(40);
-      doc.text(companyName, textX, headerY);
-      headerY += 8;
+      doc.text(companySettings.companyName, textX, headerY);
+      headerY += 6;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      if (companySettings.companyCnpj) {
+        doc.text(`CNPJ: ${companySettings.companyCnpj}`, textX, headerY);
+        headerY += 5;
+      }
+      if (companySettings.companyPhone) {
+        doc.text(`Tel: ${companySettings.companyPhone}`, textX, headerY);
+        headerY += 5;
+      }
+      if (companySettings.companyEmail) {
+        doc.text(`Email: ${companySettings.companyEmail}`, textX, headerY);
+        headerY += 5;
+      }
+      headerY += 2; // Extra spacing before title
     }
     
     doc.setFontSize(22);
     doc.setTextColor(79, 70, 229);
-    doc.text('ORÇAMENTO DE PRODUÇÃO', textX, headerY + (companyName ? 2 : 0));
+    doc.text('ORÇAMENTO DE PRODUÇÃO', textX, headerY);
     
-    const startInfoY = companyLogo ? 48 : (companyName ? headerY + 12 : 28);
+    const startInfoY = Math.max(headerY + 14, companySettings?.companyLogo ? 48 : 28);
     
     doc.setFontSize(10);
     doc.setTextColor(100);
@@ -697,71 +686,7 @@ const BudgetForm = () => {
             </div>
           </div>
 
-          {/* Company Settings */}
-          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4">
-            <button 
-              type="button"
-              onClick={() => setShowCompanySettings(!showCompanySettings)}
-              className="flex items-center gap-2 text-sm font-bold text-zinc-400 hover:text-indigo-500 transition-colors uppercase tracking-wider"
-            >
-              <Building2 size={16} />
-              Dados da Empresa (Cabeçalho PDF)
-            </button>
-            
-            <AnimatePresence>
-              {showCompanySettings && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="space-y-4 pt-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1 tracking-wider">Nome da Empresa</label>
-                      <input 
-                        type="text"
-                        value={companyName}
-                        onChange={(e) => handleCompanyNameChange(e.target.value)}
-                        placeholder="Ex: Minha Empresa LTDA"
-                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-zinc-100 text-zinc-800 font-bold placeholder:font-normal"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1 tracking-wider">Logo da Empresa</label>
-                      {companyLogo ? (
-                        <div className="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-                          <img src={companyLogo} alt="Logo" className="w-16 h-16 object-contain rounded-xl" />
-                          <div className="flex-1">
-                            <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">Logo carregada</p>
-                            <p className="text-xs text-zinc-400">Será exibida no cabeçalho do PDF</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRemoveLogo}
-                            className="p-2 hover:bg-red-500/10 text-zinc-400 hover:text-red-500 rounded-xl transition-all"
-                          >
-                            <X size={18} />
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="flex items-center gap-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-700 cursor-pointer hover:border-indigo-400 transition-colors">
-                          <ImageIcon size={20} className="text-zinc-400" />
-                          <span className="text-sm text-zinc-500 font-medium">Clique para enviar a logo</span>
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleLogoUpload} 
-                            className="hidden" 
-                          />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+
         </div>
       </motion.div>
 
